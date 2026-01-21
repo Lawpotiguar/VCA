@@ -1,0 +1,348 @@
+/* ==================== ENHANCED CHAT STYLES v2.1 ==================== */
+
+/* Melhorias visuais das mensagens */
+.msg {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.75rem 1rem !important;
+  word-wrap: break-word;
+  transition: all 0.2s ease;
+}
+
+.msg:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transform: translateY(-1px);
+}
+
+.msg.own {
+  background: linear-gradient(135deg, var(--accent) 0%, #d43d55 100%) !important;
+  color: white !important;
+}
+
+/* Header da mensagem */
+.msg-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+.msg-author {
+  font-weight: 600;
+  color: var(--text-primary);
+  max-width: 60%;
+  word-break: break-all;
+}
+
+.msg.own .msg-author {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.msg-time {
+  font-size: 0.7rem;
+  opacity: 0.6;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.msg.own .msg-time {
+  opacity: 0.8;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Conteúdo da mensagem */
+.msg-content {
+  line-height: 1.5;
+  font-size: 0.95rem;
+  word-break: break-word;
+}
+
+.msg.own .msg-content {
+  color: white;
+}
+
+/* ==================== MEDIA NO CHAT ==================== */
+
+.msg-media {
+  max-width: 100%;
+  border-radius: 8px;
+  margin-top: 0.5rem;
+  display: block;
+}
+
+.msg-image {
+  max-width: 280px;
+  cursor: zoom-in;
+  transition: transform 0.2s ease;
+}
+
+.msg-image:hover {
+  transform: scale(1.02);
+}
+
+.msg-video {
+  max-width: 100%;
+  max-height: 300px;
+}
+
+.msg-audio {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+/* ==================== FILE UPLOAD ==================== */
+
+.file-msg {
+  max-width: 85% !important;
+}
+
+.file-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  border-left: 3px solid var(--accent);
+}
+
+.msg.own .file-card {
+  background: rgba(255, 255, 255, 0.1);
+  border-left-color: rgba(255, 255, 255, 0.5);
+}
+
+.file-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.file-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.file-name {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+  word-break: break-word;
+  transition: color 0.2s ease;
+}
+
+.file-name:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+.msg.own .file-name {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.file-size {
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+
+.msg.own .file-size {
+  opacity: 0.8;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* ==================== LINKS NO CHAT ==================== */
+
+.msg-link {
+  color: #60a5fa;
+  text-decoration: none;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.msg-link:hover {
+  background: rgba(96, 165, 250, 0.15);
+  text-decoration: underline;
+}
+
+.msg.own .msg-link {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.msg.own .msg-link:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* ==================== FORMATAÇÃO DE TEXTO ==================== */
+
+strong {
+  font-weight: 700;
+}
+
+em {
+  font-style: italic;
+}
+
+code {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-family: 'Courier New', 'Monaco', monospace;
+  font-size: 0.9em;
+  color: #e0e0e0;
+}
+
+.msg.own code {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+/* ==================== MENTIONS ==================== */
+
+.mention {
+  color: #fbbf24;
+  font-weight: 600;
+  background: rgba(251, 191, 36, 0.1);
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  border-bottom: 1px solid #fbbf24;
+}
+
+.msg.own .mention {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.95);
+  border-bottom-color: rgba(255, 255, 255, 0.6);
+}
+
+/* ==================== SYSTEM MESSAGES ==================== */
+
+.system-message {
+  align-self: center;
+  text-align: center;
+  opacity: 0.5;
+  font-size: 0.85rem;
+  padding: 0.75rem 1rem;
+  background: transparent !important;
+  border-top: 1px dashed var(--border);
+  border-bottom: 1px dashed var(--border);
+  width: 95%;
+  margin: 0.5rem auto;
+  animation: messageIn 0.3s ease;
+  color: var(--text-secondary);
+}
+
+/* ==================== INPUT MELHORADO ==================== */
+
+.chat-input-wrapper {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.btn-file {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--bg-tertiary);
+  color: var(--accent);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+  font-size: 1.2rem;
+}
+
+.btn-file:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+  transform: scale(1.05);
+}
+
+/* ==================== RESPONSIVO ==================== */
+
+@media (max-width: 768px) {
+  .msg {
+    max-width: 85% !important;
+    padding: 0.65rem 0.9rem !important;
+  }
+  
+  .file-msg {
+    max-width: 100% !important;
+  }
+  
+  .msg-image {
+    max-width: 240px;
+  }
+  
+  .msg-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+  }
+  
+  .msg-time {
+    margin-left: 0;
+  }
+}
+
+/* ==================== FILE UPLOAD STYLES ==================== */
+
+.file-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, rgba(100, 200, 255, 0.15), rgba(150, 100, 255, 0.15));
+  border: 1px solid rgba(100, 150, 255, 0.3);
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--text-primary);
+  margin-top: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.file-link:hover {
+  background: linear-gradient(135deg, rgba(100, 200, 255, 0.25), rgba(150, 100, 255, 0.25));
+  border-color: rgba(100, 150, 255, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(100, 150, 255, 0.2);
+}
+
+.file-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.file-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  overflow: hidden;
+}
+
+.file-name {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.msg.own .file-link {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 200, 100, 0.15));
+  border-color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.msg.own .file-link:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 200, 100, 0.25));
+  border-color: rgba(255, 255, 255, 0.5);
+}
+

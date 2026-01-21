@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VoiceChat P2P v2</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  
+  <!-- TELA DE LOGIN -->
+  <div id="login-screen" class="screen active">
+    <div class="login-container">
+      <div class="logo">
+        <div class="logo-icon">🔒</div>
+        <h1>VoiceChat P2P</h1>
+        <p class="subtitle">v2.0 • E2E Encryption • 100% Anônimo</p>
+      </div>
+      
+      <div class="login-form">
+        <input type="text" 
+               id="username-input" 
+               placeholder="Seu apelido (ou deixe vazio)" 
+               maxlength="30"
+               autocomplete="off">
+        <button id="enter-btn" class="btn-primary">ENTRAR ANONIMAMENTE</button>
+        <small class="privacy-note">
+          🔐 Mensagens criptografadas end-to-end<br>
+          Nenhum dado é salvo. Você desaparece ao fechar a aba.
+        </small>
+      </div>
+    </div>
+  </div>
+
+  <!-- TELA PRINCIPAL -->
+  <div id="main-screen" class="screen">
+    <div class="app-container">
+      
+      <!-- SIDEBAR -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <h2>🏠 Salas</h2>
+          <button id="create-room-btn" class="btn-icon" title="Criar Sala">+</button>
+        </div>
+        
+        <div id="rooms-list" class="rooms-list"></div>
+        
+        <!-- USUÁRIOS ONLINE -->
+        <div class="online-users-section">
+          <h3>👥 Online</h3>
+          <div id="online-users" class="online-users-list"></div>
+        </div>
+        
+        <div class="sidebar-footer">
+          <!-- Status Selector -->
+          <div class="status-selector">
+            <button id="status-btn" class="status-btn" title="Mudar Status">
+              <span class="status-indicator" id="status-indicator">🟢</span>
+              <span id="status-text">Online</span>
+            </button>
+            <div id="status-menu" class="status-menu hidden">
+              <button data-status="online">🟢 Online</button>
+              <button data-status="busy">🔴 Ocupado</button>
+              <button data-status="away">🟡 Ausente</button>
+              <button data-status="dnd">⛔ Não Perturbe</button>
+            </div>
+          </div>
+          
+          <div class="user-info">
+            <div class="user-avatar" id="user-avatar">U</div>
+            <span id="current-username">Usuário</span>
+          </div>
+          
+          <div class="audio-controls">
+            <button id="mute-btn" class="control-btn" title="Mutar/Desmutar">🎤</button>
+            <button id="deafen-btn" class="control-btn" title="Ensurdecer">🔊</button>
+            <button id="settings-btn" class="control-btn" title="Configurações">⚙️</button>
+            <button id="stats-btn" class="control-btn" title="Estatísticas">📊</button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ÁREA PRINCIPAL -->
+      <main class="main-area">
+        
+        <div id="no-room-selected" class="empty-state">
+          <div class="empty-icon">🎧</div>
+          <h2>Selecione ou crie uma sala</h2>
+          <p>Comunicação criptografada • Zero logs • 100% privado</p>
+        </div>
+
+        <div id="room-container" class="room-container hidden">
+          <header class="room-header">
+            <div class="room-title-area">
+              <h2 id="room-title">Nome da Sala</h2>
+              <div class="room-badges">
+                <span id="owner-badge" class="badge badge-owner hidden">👑 Dono</span>
+                <span id="mod-badge" class="badge badge-mod hidden">⭐ Mod</span>
+                <span class="badge badge-encrypted">🔐 E2E</span>
+              </div>
+            </div>
+            
+            <div class="room-actions">
+              <button id="invite-btn" class="btn-secondary btn-small">📨 Convidar</button>
+              <button id="settings-room-btn" class="btn-secondary btn-small hidden">⚙️ Configurar</button>
+              <button id="leave-btn" class="btn-danger btn-small">Sair</button>
+            </div>
+          </header>
+
+          <div class="room-body">
+            <section class="users-panel">
+              <h3>Participantes (<span id="user-count">0</span>)</h3>
+              <div id="users-list" class="users-list"></div>
+            </section>
+
+            <section class="chat-panel">
+              <!-- ABAS DO CHAT -->
+              <div class="chat-tabs">
+                <button class="chat-tab active" data-tab="room" id="tab-room">
+                  🏠 Sala
+                </button>
+                <div id="dm-tabs-container" class="dm-tabs-container"></div>
+              </div>
+
+              <!-- CONTEÚDO DO CHAT -->
+              <div class="chat-content">
+                <!-- Chat da Sala -->
+                <div id="room-chat" class="chat-view active">
+                  <div id="chat-messages" class="chat-messages"></div>
+                  <div class="chat-preview" id="chat-preview"></div>
+                </div>
+
+                <!-- Chat Privado (dinâmico) -->
+                <div id="dm-chats"></div>
+              </div>
+
+              <!-- INPUT DE MENSAGEM -->
+              <form id="chat-form" class="chat-form">
+                <div class="chat-input-wrapper">
+                  <input type="text" 
+                         id="chat-input" 
+                         placeholder="Mensagem..." 
+                         maxlength="500"
+                         autocomplete="off">
+                  <button type="submit" class="btn-send">Enviar</button>
+                </div>
+              </form>
+            </section>
+          </div>
+        </div>
+
+        <!-- CONTAINER PARA DM SEM SALA -->
+        <div id="dm-container" class="dm-container hidden">
+          <div class="dm-header">
+            <h2>💬 Mensagens Privadas</h2>
+            <button id="close-dm-btn" class="btn-secondary btn-small">← Voltar</button>
+          </div>
+          
+          <div class="dm-body">
+            <section class="chat-panel">
+              <!-- ABAS DO CHAT -->
+              <div class="chat-tabs">
+                <div id="dm-tabs-container-standalone" class="dm-tabs-container"></div>
+              </div>
+
+              <!-- CONTEÚDO DO CHAT -->
+              <div class="chat-content">
+                <!-- Chat Privado (dinâmico) -->
+                <div id="dm-chats-standalone"></div>
+              </div>
+
+              <!-- INPUT DE MENSAGEM -->
+              <form id="chat-form-dm" class="chat-form">
+                <div class="chat-input-wrapper">
+                  <input type="text" 
+                         id="chat-input-dm" 
+                         placeholder="Mensagem privada..." 
+                         maxlength="500"
+                         autocomplete="off">
+                  <button type="submit" class="btn-send">Enviar</button>
+                </div>
+              </form>
+            </section>
+          </div>
+        </div>
+        
+      </main>
+      
+    </div>
+  </div>
+
+  <!-- MODAL: Criar Sala -->
+  <div id="create-modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <h3>Criar Nova Sala</h3>
+      <form id="create-form">
+        <div class="form-group">
+          <label>Nome da Sala</label>
+          <input type="text" id="new-room-name" placeholder="Ex: Minha Sala Privada" maxlength="50" required>
+        </div>
+        <div class="form-group">
+          <label>Senha (opcional)</label>
+          <input type="password" id="new-room-password" placeholder="Deixe vazio para sala pública">
+        </div>
+        <div class="form-group">
+          <label>Máximo de Usuários</label>
+          <input type="number" id="new-room-max" value="10" min="2" max="50">
+        </div>
+        <div class="modal-actions">
+          <button type="button" id="cancel-create" class="btn-secondary">Cancelar</button>
+          <button type="submit" class="btn-primary">Criar Sala</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Convite -->
+  <div id="invite-modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <h3>📨 Convidar para a Sala</h3>
+      <p class="modal-description">Compartilhe o código ou link:</p>
+      
+      <div class="form-group">
+        <label>Código da Sala</label>
+        <div class="copy-group">
+          <input type="text" id="invite-code-display" readonly>
+          <button type="button" id="copy-code-btn" class="btn-copy">Copiar</button>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label>Link Direto</label>
+        <div class="copy-group">
+          <input type="text" id="invite-link-display" readonly>
+          <button type="button" id="copy-link-btn" class="btn-copy">Copiar</button>
+        </div>
+      </div>
+      
+      <div class="modal-actions">
+        <button type="button" id="close-invite" class="btn-primary">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Configurações de Áudio -->
+  <div id="audio-settings-modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content modal-large">
+      <h3>🎧 Configurações de Áudio</h3>
+      
+      <div class="settings-content">
+        <div class="form-group">
+          <label>Dispositivo de Entrada (Microfone)</label>
+          <select id="audio-input-select">
+            <option value="">Carregando dispositivos...</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Dispositivo de Saída (Alto-falante)</label>
+          <select id="audio-output-select">
+            <option value="">Carregando dispositivos...</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Volume do Microfone: <span id="mic-volume-value">100%</span></label>
+          <input type="range" id="mic-volume" min="0" max="100" value="100">
+        </div>
+        
+        <div class="form-group">
+          <label>Volume de Saída: <span id="output-volume-value">100%</span></label>
+          <input type="range" id="output-volume" min="0" max="100" value="100">
+        </div>
+        
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="noise-suppression">
+            <span>Supressão de Ruído Avançada</span>
+          </label>
+        </div>
+        
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="echo-cancellation" checked>
+            <span>Cancelamento de Eco</span>
+          </label>
+        </div>
+        
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="auto-gain">
+            <span>Ganho Automático</span>
+          </label>
+        </div>
+        
+        <div class="form-group">
+          <label>Teste de Microfone</label>
+          <div class="mic-test">
+            <div id="mic-level" class="mic-level-bar"></div>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label>Qualidade de Áudio</label>
+          <select id="audio-quality">
+            <option value="low">Baixa (Econômico)</option>
+            <option value="medium" selected>Média (Balanceado)</option>
+            <option value="high">Alta (Máxima Qualidade)</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="modal-actions">
+        <button type="button" id="close-audio-settings" class="btn-primary">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Dashboard de Estatísticas -->
+  <div id="stats-modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content modal-large">
+      <h3>📊 Estatísticas do Servidor</h3>
+      
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">👥</div>
+          <div class="stat-info">
+            <div class="stat-label">Usuários Online</div>
+            <div class="stat-value" id="stat-current-users">-</div>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">🏠</div>
+          <div class="stat-info">
+            <div class="stat-label">Salas Ativas</div>
+            <div class="stat-value" id="stat-total-rooms">-</div>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">⏱️</div>
+          <div class="stat-info">
+            <div class="stat-label">Tempo Online</div>
+            <div class="stat-value" id="stat-uptime">-</div>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">📈</div>
+          <div class="stat-info">
+            <div class="stat-label">Pico de Usuários</div>
+            <div class="stat-value" id="stat-peak-users">-</div>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">🔗</div>
+          <div class="stat-info">
+            <div class="stat-label">Total de Conexões</div>
+            <div class="stat-value" id="stat-total-connections">-</div>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">💬</div>
+          <div class="stat-info">
+            <div class="stat-label">Mensagens Enviadas</div>
+            <div class="stat-value" id="stat-total-messages">-</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-actions">
+        <button type="button" id="refresh-stats" class="btn-secondary">🔄 Atualizar</button>
+        <button type="button" id="close-stats" class="btn-primary">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MENU CONTEXTUAL -->
+  <div id="user-context-menu" class="context-menu hidden">
+    <button class="ctx-item" id="ctx-message">💬 Enviar DM</button>
+    <button class="ctx-item" id="ctx-kick">👢 Kickar</button>
+    <button class="ctx-item" id="ctx-ban">🚫 Banir</button>
+    <button class="ctx-item" id="ctx-promote">⭐ Promover a Mod</button>
+    <button class="ctx-item" id="ctx-demote">⬇️ Remover Mod</button>
+    <button class="ctx-item ctx-danger" id="ctx-transfer">👑 Transferir Dono</button>
+  </div>
+
+  <!-- NOTIFICAÇÕES -->
+  <div id="notifications" class="notifications"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/encryption.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/webrtc.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

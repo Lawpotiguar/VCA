@@ -1,0 +1,451 @@
+/* ==================== NOVOS COMPONENTES CSS ==================== */
+
+/* QUALITY INDICATOR */
+.connection-quality {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
+  border-left: 4px solid var(--success);
+  font-size: 14px;
+  font-weight: 500;
+  animation: slideIn 0.3s ease-out;
+}
+
+.connection-quality.hidden {
+  display: none;
+}
+
+.connection-quality #quality-icon {
+  font-size: 16px;
+}
+
+/* AUDIO SETTINGS PANEL */
+.audio-settings-panel {
+  position: fixed;
+  right: 16px;
+  bottom: 80px;
+  width: 380px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  animation: slideUp 0.3s ease-out;
+}
+
+.audio-settings-panel.hidden {
+  display: none !important;
+}
+
+.audio-settings-panel .settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.audio-settings-panel .settings-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.audio-settings-panel .close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.audio-settings-panel .close-btn:hover {
+  color: var(--text-primary);
+}
+
+.audio-settings-panel .settings-body {
+  padding: 16px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.audio-settings-panel .settings-group {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.audio-settings-panel .settings-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.audio-settings-panel .settings-group small {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.audio-settings-panel select,
+.audio-settings-panel input[type="range"] {
+  padding: 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.audio-settings-panel select:focus,
+.audio-settings-panel input[type="range"]:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.1);
+}
+
+.audio-settings-panel .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-primary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.audio-settings-panel .checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+.audio-settings-panel .settings-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+/* STATISTICS DASHBOARD */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+}
+
+.stat-icon {
+  font-size: 28px;
+  min-width: 40px;
+  text-align: center;
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* STATUS MANAGER */
+.status-selector {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.status-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.status-btn:hover {
+  background: var(--bg-hover);
+}
+
+.status-indicator {
+  font-size: 16px;
+}
+
+.status-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-top: 4px;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  min-width: 160px;
+}
+
+.status-menu.hidden {
+  display: none;
+}
+
+.status-menu button {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.status-menu button:hover {
+  background: var(--bg-tertiary);
+  color: var(--accent);
+}
+
+.status-panel {
+  padding: 16px;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+}
+
+.status-current {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+}
+
+.status-icon {
+  font-size: 20px;
+}
+
+.status-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.custom-status-input {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.status-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.status-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.status-option:hover {
+  border-color: var(--accent);
+  background: var(--bg-hover);
+}
+
+.status-option.active {
+  border-color: var(--accent);
+  background: rgba(233, 69, 96, 0.1);
+}
+
+.status-option .icon {
+  font-size: 20px;
+}
+
+.status-option .label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* RATE LIMITER FEEDBACK */
+.rate-limit-warning {
+  padding: 8px 12px;
+  background: var(--warning);
+  color: #000;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* MEDIA MESSAGES */
+.chat-message.media-message {
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chat-message.media-message img,
+.chat-message.media-message video {
+  border-radius: 6px;
+  max-width: 100%;
+}
+
+.chat-message.media-message small {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+/* ENCRYPTION INDICATOR */
+.encrypted-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--success);
+  font-weight: 600;
+}
+
+.encrypted-indicator::before {
+  content: '🔐';
+}
+
+/* ANIMATIONS */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .audio-settings-panel {
+    width: 100%;
+    max-width: calc(100vw - 32px);
+    right: 16px;
+    bottom: 16px;
+    max-height: 70vh;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .status-options {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* DARK THEME ADJUSTMENTS */
+@media (prefers-color-scheme: dark) {
+  .audio-settings-panel {
+    background: var(--bg-secondary);
+  }
+
+  .stat-card {
+    background: var(--bg-tertiary);
+  }
+
+  .status-panel {
+    background: var(--bg-tertiary);
+  }
+}
+
+/* ACCESSIBILITY */
+@media (prefers-reduced-motion: reduce) {
+  .audio-settings-panel,
+  .stat-card,
+  .status-option {
+    animation: none !important;
+    transition: none !important;
+  }
+}
