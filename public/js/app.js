@@ -8,6 +8,7 @@ const socket = io();
 // Estado global
 let myUser = null;
 let currentRoom = null;
+let pendingRoomJoinId = null; // Armazena ID da sala sendo acessada (para evitar race condition)
 let peers = {};
 let localStream = null;
 let speakingInterval = null;
@@ -15,6 +16,8 @@ let selectedUserId = null;
 let isMuted = false;
 let isDeafened = false;
 let currentRoomPassword = null;
+let audioContext = null; // AudioContext para análise de áudio
+let enableSoundNotifications = true; // Som ativado por padrão
 
 // Estado de chat privado
 let currentDMUserId = null;
@@ -83,18 +86,73 @@ socket.on('rooms-update', (rooms) => {
     return;
   }
   
-  container.innerHTML = rooms.map(room => `
-    <div class="room-card" onclick="attemptJoinRoom('${room.id}', ${room.hasPassword})">
+  container.innerHTML = rooms.map(room => {
+    // Se há uma transição em andamento (pendingRoomJoinId), usar apenas ela
+    // Caso contrário, usar currentRoom
+    let isActiveRoom = false;
+    
+    if (pendingRoomJoinId) {
+      // Durante transição, apenas a sala sendo acessada é ativa
+      isActiveRoom = pendingRoomJoinId === room.id;
+    } else if (currentRoom) {
+      // Sem transição, usar a sala atual
+      isActiveRoom = currentRoom.id === room.id;
+    }
+    
+    const disabledClass = isActiveRoom ? 'disabled' : '';
+    const onClickAttr = isActiveRoom ? '' : `onclick="attemptJoinRoom('${room.id}', ${room.hasPassword}, ${room.permanent})"`;
+    
+    return `
+    <div class="room-card ${disabledClass}" ${onClickAttr} title="${isActiveRoom ? 'Você já está nesta sala' : ''}">
       <div class="room-name">${escapeHtml(room.name)}</div>
       <div class="room-info">
         <span>${room.userCount}/${room.maxUsers}</span>
         ${room.hasPassword ? '<span class="lock">🔒</span>' : ''}
+        ${isActiveRoom ? '<span class="current-room">✓ Atual</span>' : ''}
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 });
 
-function attemptJoinRoom(roomId, hasPassword) {
+function attemptJoinRoom(roomId, hasPassword, isPermanent = false) {
+  // Verificar se já está tentando acessar uma sala diferente
+  if (pendingRoomJoinId && pendingRoomJoinId !== roomId) {
+    console.warn(`⚠️ Já está tentando acessar outra sala: ${pendingRoomJoinId}. Cancelando.`);
+    return;
+  }
+  
+  // Verificar se já está tentando acessar essa mesma sala (clique duplicado)
+  if (pendingRoomJoinId === roomId) {
+    return;
+  }
+  
+  // Verificar se está em uma sala vazia ANTES de entrar em outra
+  // Mas APENAS se a sala atual não for permanente
+  const userCount = document.getElementById('user-count')?.textContent || '0';
+  const isCurrentRoomEmpty = parseInt(userCount) <= 1 && currentRoom;
+  const isCurrentRoomPermanent = currentRoom?.permanent === true;
+  
+  // Só mostrar alerta se a sala atual NÃO é permanente e está vazia
+  if (isCurrentRoomEmpty && !isCurrentRoomPermanent && currentRoom?.id !== roomId) {
+    // Mostrar confirmação
+    showConfirmModal(
+      '⚠️ Sala será deletada',
+      `A sala "${currentRoom.name}" será deletada ao sair.\n\nDeseja continuar?`
+    ).then((confirmed) => {
+      if (!confirmed) return;
+      
+      // Sair da sala vazia e entrar na nova
+      socket.emit('leave-room');
+      resetRoomUI();
+      proceedToJoinRoom(roomId, hasPassword);
+    });
+  } else {
+    proceedToJoinRoom(roomId, hasPassword);
+  }
+}
+
+function proceedToJoinRoom(roomId, hasPassword) {
   let password = null;
   
   if (hasPassword) {
@@ -135,9 +193,13 @@ function migrateDMsFromStandaloneToRoom() {
 }
 
 function joinRoom(roomId, password = null) {
+  // Armazenar ID da sala que está sendo acessada (para evitar cliques duplicados)
+  pendingRoomJoinId = roomId;
+  
   socket.emit('join-room', { roomId, password }, (response) => {
     if (!response.success) {
       showNotification(response.error || 'Erro ao entrar na sala', 'error');
+      pendingRoomJoinId = null; // Limpar imediatamente se falhar
       return;
     }
     
@@ -145,6 +207,10 @@ function joinRoom(roomId, password = null) {
     migrateDMsFromStandaloneToRoom();
     
     currentRoom = response.room;
+    // Limpar APENAS se for a mesma sala que foi requisitada
+    if (pendingRoomJoinId === roomId) {
+      pendingRoomJoinId = null;
+    }
     
     document.getElementById('no-room-selected').classList.add('hidden');
     document.getElementById('room-container').classList.remove('hidden');
@@ -162,7 +228,60 @@ function joinRoom(roomId, password = null) {
   });
 }
 
-document.getElementById('leave-btn').addEventListener('click', () => {
+// Função para mostrar modal de confirmação
+function showConfirmModal(title, message) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('confirm-modal');
+    document.getElementById('confirm-title').textContent = title;
+    document.getElementById('confirm-message').textContent = message;
+    
+    // Remover listeners antigos
+    const confirmOkBtn = document.getElementById('confirm-ok');
+    const confirmCancelBtn = document.getElementById('confirm-cancel');
+    
+    const okHandler = () => {
+      modal.classList.add('hidden');
+      confirmOkBtn.removeEventListener('click', okHandler);
+      confirmCancelBtn.removeEventListener('click', cancelHandler);
+      resolve(true);
+    };
+    
+    const cancelHandler = () => {
+      modal.classList.add('hidden');
+      confirmOkBtn.removeEventListener('click', okHandler);
+      confirmCancelBtn.removeEventListener('click', cancelHandler);
+      resolve(false);
+    };
+    
+    confirmOkBtn.addEventListener('click', okHandler);
+    confirmCancelBtn.addEventListener('click', cancelHandler);
+    
+    // Fechar ao clicar no overlay
+    modal.querySelector('.modal-overlay').addEventListener('click', cancelHandler, { once: true });
+    
+    modal.classList.remove('hidden');
+  });
+}
+
+document.getElementById('leave-btn').addEventListener('click', async () => {
+  // Verificar se a sala está vazia (só o usuário atual)
+  const userCount = document.getElementById('user-count')?.textContent || '0';
+  const isRoomEmpty = parseInt(userCount) <= 1; // Apenas o próprio usuário
+  const isPermanent = currentRoom?.permanent === true; // Verificar se é permanente
+  
+  // Só mostrar alerta se a sala NÃO é permanente e está vazia
+  if (isRoomEmpty && currentRoom && !isPermanent) {
+    // Mostrar modal de confirmação
+    const confirmed = await showConfirmModal(
+      '⚠️ Sala será deletada',
+      `A sala "${currentRoom.name}" será deletada ao sair.\n\nTem certeza que deseja sair?`
+    );
+    
+    if (!confirmed) {
+      return; // Cancelar saída
+    }
+  }
+  
   socket.emit('leave-room');
   resetRoomUI();
   showNotification('Você saiu da sala', 'info');
@@ -196,6 +315,7 @@ function resetRoomUI() {
   document.getElementById('room-container').classList.add('hidden');
   document.getElementById('chat-messages').innerHTML = '';
   currentRoom = null;
+  pendingRoomJoinId = null; // Limpar ID da sala pendente
   closeAllPeerConnections();
   stopSpeakingDetection();
 }
@@ -790,32 +910,44 @@ socket.on('private-message', (data) => {
     timestamp: Date.now()
   });
   
+  // Tocar som de notificação
+  playNotificationSound();
+  
   // Se o DM está aberto, atualizar
   if (currentDMUserId === data.senderId) {
     renderDMMessages(data.senderId);
   } else {
-    // NÃO abrir automaticamente - apenas criar a aba se não existir
-    const dmTabsContainer = document.getElementById('dm-tabs-container');
-    let dmTab = document.querySelector(`[data-dm-user="${data.senderId}"]`);
-    
-    // Se aba não existe, criar
-    if (!dmTab) {
-      // Usar a função para criar a aba corretamente
-      createOrActivateDMTab(data.senderId, data.senderName);
+    // Se está na tela inicial (sem sala), mostrar interface standalone
+    if (!currentRoom) {
+      showDMContainer();
+      createOrActivateDMTabStandalone(data.senderId, data.senderName);
+      
+      // Mostrar notificação
+      showNotification(`💬 Nova DM de ${escapeHtml(data.senderName)}: ${escapeHtml(messageText.substring(0, 40))}`, 'info');
+    } else {
+      // Se está em sala, usar interface normal
+      const dmTabsContainer = document.getElementById('dm-tabs-container');
+      let dmTab = document.querySelector(`[data-dm-user="${data.senderId}"]`);
+      
+      // Se aba não existe, criar
+      if (!dmTab) {
+        // Usar a função para criar a aba corretamente
+        createOrActivateDMTab(data.senderId, data.senderName);
+      }
+      
+      // Renderizar histórico
+      renderDMMessages(data.senderId);
+      
+      // Notificar com badge visual
+      if (dmTab) {
+        // Adicionar indicador de mensagem nova
+        dmTab.classList.add('new-message');
+        dmTab.setAttribute('title', `${data.senderName}: ${messageText.substring(0, 30)}...`);
+      }
+      
+      // Mostrar notificação também
+      showNotification(`💬 Nova DM de ${escapeHtml(data.senderName)}: ${escapeHtml(messageText.substring(0, 40))}`, 'info');
     }
-    
-    // Renderizar histórico
-    renderDMMessages(data.senderId);
-    
-    // Notificar com badge visual
-    if (dmTab) {
-      // Adicionar indicador de mensagem nova
-      dmTab.classList.add('new-message');
-      dmTab.setAttribute('title', `${data.senderName}: ${messageText.substring(0, 30)}...`);
-    }
-    
-    // Mostrar notificação também
-    showNotification(`💬 Nova DM de ${escapeHtml(data.senderName)}: ${escapeHtml(messageText.substring(0, 40))}`, 'info');
   }
 });
 
@@ -841,6 +973,11 @@ socket.on('banned', (data) => {
 
 socket.on('chat-message', (data) => {
   if (!currentRoom) return;
+  
+  // Tocar som de notificação (apenas para mensagens de outros usuários)
+  if (data.userId !== myUser.id) {
+    playNotificationSound();
+  }
   
   const container = document.getElementById('chat-messages');
   const msg = document.createElement('div');
@@ -1216,6 +1353,50 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+// Função para tocar notificação sonora
+function playNotificationSound() {
+  if (!enableSoundNotifications) return;
+  
+  try {
+    // Usar arquivo de som OGG
+    const audio = new Audio('/sounds/notification.ogg');
+    audio.volume = 0.5; // Volume moderado
+    audio.play().catch(err => {
+      console.warn('⚠️ Não foi possível tocar som:', err);
+      // Fallback: usar tom Web Audio API
+      playFallbackSound();
+    });
+  } catch (err) {
+    console.warn('⚠️ Erro ao criar áudio:', err);
+    playFallbackSound();
+  }
+}
+
+// Fallback: tom usando Web Audio API
+function playFallbackSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // Tom agradável: 800Hz por 150ms
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.frequency.value = 800;
+    osc.type = 'sine';
+    
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+    
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.15);
+  } catch (err) {
+    console.warn('⚠️ Fallback de som também falhou:', err);
+  }
+}
+
 // Fechar modais clicando fora
 document.querySelectorAll('.modal').forEach(modal => {
   modal.querySelector('.modal-overlay')?.addEventListener('click', () => {
@@ -1353,40 +1534,73 @@ document.getElementById('audio-quality')?.addEventListener('change', (e) => {
   showNotification(`Qualidade de áudio alterada para: ${e.target.options[e.target.selectedIndex].text}`, 'success');
 });
 
+document.getElementById('sound-notifications')?.addEventListener('change', (e) => {
+  enableSoundNotifications = e.target.checked;
+  localStorage.setItem('enableSoundNotifications', e.target.checked);
+  showNotification(e.target.checked ? '🔔 Som de notificação ativado' : '🔔 Som de notificação desativado', 'success');
+  
+  // Tocar som de teste se ativado
+  if (e.target.checked) {
+    playNotificationSound();
+  }
+});
+
 // Mic test
 let micTestAnalyser = null;
 let micTestAnimationId = null;
 
 function startMicTest() {
-  if (!localStream) return;
+  if (!localStream) {
+    console.warn('⚠️ Microfone não está ativo');
+    return;
+  }
   
   const audioTrack = localStream.getAudioTracks()[0];
-  if (!audioTrack) return;
-  
-  if (!audioContext) {
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  if (!audioTrack) {
+    console.warn('⚠️ Nenhuma faixa de áudio encontrada');
+    return;
   }
   
-  const source = audioContext.createMediaStreamSource(localStream);
-  micTestAnalyser = audioContext.createAnalyser();
-  source.connect(micTestAnalyser);
-  
-  const dataArray = new Uint8Array(micTestAnalyser.frequencyBinCount);
-  const micLevelBar = document.getElementById('mic-level');
-  
-  function updateMicLevel() {
-    micTestAnalyser.getByteFrequencyData(dataArray);
-    const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
-    const level = Math.min(100, (average / 255) * 100);
-    
-    if (micLevelBar) {
-      micLevelBar.style.width = level + '%';
+  try {
+    // Criar AudioContext se não existir
+    if (!audioContext) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
     }
     
-    micTestAnimationId = requestAnimationFrame(updateMicLevel);
+    // Se AudioContext estava suspenso, retomar
+    if (audioContext.state === 'suspended') {
+      audioContext.resume();
+    }
+    
+    const source = audioContext.createMediaStreamSource(localStream);
+    micTestAnalyser = audioContext.createAnalyser();
+    micTestAnalyser.fftSize = 256;
+    source.connect(micTestAnalyser);
+    
+    const dataArray = new Uint8Array(micTestAnalyser.frequencyBinCount);
+    const micLevelBar = document.getElementById('mic-level');
+    
+    if (!micLevelBar) {
+      console.warn('⚠️ Elemento mic-level não encontrado');
+      return;
+    }
+    
+    function updateMicLevel() {
+      if (micTestAnalyser) {
+        micTestAnalyser.getByteFrequencyData(dataArray);
+        const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+        const level = Math.min(100, (average / 255) * 150); // Aumentado sensibilidade
+        
+        micLevelBar.style.width = level + '%';
+        micTestAnimationId = requestAnimationFrame(updateMicLevel);
+      }
+    }
+    
+    updateMicLevel();
+    console.log('✅ Teste de microfone iniciado');
+  } catch (error) {
+    console.error('❌ Erro ao iniciar teste de microfone:', error);
   }
-  
-  updateMicLevel();
 }
 
 function stopMicTest() {
@@ -1394,10 +1608,13 @@ function stopMicTest() {
     cancelAnimationFrame(micTestAnimationId);
     micTestAnimationId = null;
   }
+  micTestAnalyser = null;
+  
   const micLevelBar = document.getElementById('mic-level');
   if (micLevelBar) {
     micLevelBar.style.width = '0%';
   }
+  console.log('✅ Teste de microfone parado');
 }
 
 // Stats button - abrir modal de estatísticas
@@ -1502,6 +1719,7 @@ function restoreAudioSettings() {
   const echoCancellation = localStorage.getItem('echoCancellation') !== 'false';
   const autoGain = localStorage.getItem('autoGain') === 'true';
   const audioQuality = localStorage.getItem('audioQuality') || 'medium';
+  const soundNotifications = localStorage.getItem('enableSoundNotifications') !== 'false'; // true por padrão
   
   const micVolumeInput = document.getElementById('mic-volume');
   if (micVolumeInput) {
@@ -1533,6 +1751,12 @@ function restoreAudioSettings() {
   const audioQualitySelect = document.getElementById('audio-quality');
   if (audioQualitySelect) {
     audioQualitySelect.value = audioQuality;
+  }
+  
+  const soundNotificationsCheckbox = document.getElementById('sound-notifications');
+  if (soundNotificationsCheckbox) {
+    soundNotificationsCheckbox.checked = soundNotifications;
+    enableSoundNotifications = soundNotifications;
   }
 }
 

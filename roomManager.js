@@ -171,7 +171,8 @@ class AnonymousRoomManager {
         name: room.name,
         code: room.code,
         hasPassword: room.hasPassword,
-        ownerId: room.ownerId
+        ownerId: room.ownerId,
+        permanent: room.permanent
       },
       users: room.users.map(u => ({
         id: u.id,

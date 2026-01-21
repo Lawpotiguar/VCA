@@ -120,9 +120,10 @@ io.on('connection', (socket) => {
   socket.on('join-room', async (data, callback) => {
     if (!currentUser) return callback({ success: false, error: 'Não autenticado' });
 
-    // Sair da sala atual
+    // Sair da sala atual SEM emitir rooms-update ainda
+    const previousRoomId = currentRoomId;
     if (currentRoomId) {
-      leaveCurrentRoom();
+      leaveCurrentRoom(false); // false = não emitir rooms-update aqui
     }
 
     // Buscar sala por ID ou código
@@ -150,7 +151,15 @@ io.on('connection', (socket) => {
 
     console.log(`➡️ ${currentUser.name} entrou em ${room.name}`);
 
-    // Notificar outros usuários
+    // Notificar outros usuários da sala anterior que o usuário saiu
+    if (previousRoomId) {
+      socket.to(previousRoomId).emit('user-left', { 
+        userId: currentUser.id,
+        name: currentUser.name
+      });
+    }
+
+    // Notificar outros usuários da nova sala que o usuário entrou
     socket.to(room.id).emit('user-joined', {
       user: {
         id: currentUser.id,
@@ -160,6 +169,7 @@ io.on('connection', (socket) => {
       }
     });
 
+    // Emitir apenas UMA rooms-update após sair da sala anterior e entrar na nova
     io.emit('rooms-update', roomManager.getPublicRoomsList());
 
     // Enviar lista atualizada de usuários para a sala
@@ -175,15 +185,17 @@ io.on('connection', (socket) => {
       })));
     }
 
+    emitOnlineUsers(); // Atualizar lista de usuários online
+
     callback(result);
   });
 
   // === SAIR DA SALA ===
   socket.on('leave-room', () => {
-    leaveCurrentRoom();
+    leaveCurrentRoom(true); // true = emitir rooms-update
   });
 
-  function leaveCurrentRoom() {
+  function leaveCurrentRoom(emitUpdate = true) {
     if (!currentRoomId || !currentUser) return;
 
     const room = roomManager.getRoom(currentRoomId);
@@ -198,8 +210,10 @@ io.on('connection', (socket) => {
       name: currentUser.name
     });
 
-    io.emit('rooms-update', roomManager.getPublicRoomsList());
-    emitOnlineUsers(); // Atualizar lista de online
+    if (emitUpdate) {
+      io.emit('rooms-update', roomManager.getPublicRoomsList());
+      emitOnlineUsers(); // Atualizar lista de online
+    }
     
     currentRoomId = null;
     currentUser.isOwner = false;
@@ -502,7 +516,7 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     if (currentUser) {
       console.log(`❌ ${currentUser.name} desconectou`);
-      leaveCurrentRoom();
+      leaveCurrentRoom(true); // true = emitir rooms-update
       roomManager.removeUser(socket.id);
       emitOnlineUsers(); // Atualizar lista de online
     }

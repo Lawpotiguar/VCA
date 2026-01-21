@@ -297,6 +297,13 @@
         </div>
         
         <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="sound-notifications" checked>
+            <span>🔔 Som de Notificação de Mensagens</span>
+          </label>
+        </div>
+        
+        <div class="form-group">
           <label>Teste de Microfone</label>
           <div class="mic-test">
             <div id="mic-level" class="mic-level-bar"></div>
@@ -315,6 +322,20 @@
       
       <div class="modal-actions">
         <button type="button" id="close-audio-settings" class="btn-primary">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Confirmação (para sair de sala vazia) -->
+  <div id="confirm-modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content modal-confirm">
+      <div class="modal-icon warning-icon">⚠️</div>
+      <h3 id="confirm-title">Confirmar ação</h3>
+      <p id="confirm-message">Tem certeza que deseja continuar?</p>
+      <div class="modal-actions">
+        <button id="confirm-cancel" class="btn-secondary">Cancelar</button>
+        <button id="confirm-ok" class="btn-danger">Confirmar</button>
       </div>
     </div>
   </div>
